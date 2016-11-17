@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import urllib,urllib2,json
+import urllib, urllib2, json, hashlib
 
-APPID = 'wx5f8976fb0725b9f9'
-SECRET = '921b2a387dcc624d3d2b2d2a90707dbe'
+#APPID = 'wx5f8976fb0725b9f9'
+APPID = 'wxcbb0bc12953e0a26'
+#SECRET = '921b2a387dcc624d3d2b2d2a90707dbe'
+SECRET = 'af5ec0a2b440cb378f2bf08cd14c3e60'
 
 def curl(url, para):
     """
@@ -11,7 +13,7 @@ def curl(url, para):
     """
     req = urllib2.Request(url + urllib.urlencode(para))
     res = urllib2.urlopen(req)
-    jsonData = json.loads(res.read())
+    jsonData = json.loads(res.read(), encoding='utf-8')
 
     return jsonData
 
@@ -19,6 +21,8 @@ def curl(url, para):
 def getAccessToken():
     """
     获取普通access_token
+    返回数据:
+    {"access_token":"ACCESS_TOKEN","expires_in":7200}
     """
     url = 'https://api.weixin.qq.com/cgi-bin/token?'
     para = {
@@ -28,6 +32,37 @@ def getAccessToken():
     }
     return curl(url, para)
 
+def getTicket():
+	"""
+	获取jsapi_ticket
+	返回数据:
+	{
+		"errcode":0,
+		"errmsg":"ok",
+		"ticket":"bxLdikRXVbTPdHSM05e5u5sUoXNKd8-41ZO3MhKoyN5OfkWITDGgnr2fwJ0m9E8NYzWKVZvdVtaUgWvsdshFKA",
+		"expires_in":7200
+	}
+	"""
+	jsonData = getAccessToken()
+	print jsonData['access_token']	
+
+	url = 'https://api.weixin.qq.com/cgi-bin/ticket/getticket?'
+	para = {
+		'access_token': jsonData['access_token'],
+        	'type': 'jsapi'
+	}
+	return curl(url, para)
+
+def getSignature(nonceStr, timestamp, url):
+	"""
+	生成JS-SDK权限验证的签名
+	"""
+	jsonData = getTicket()
+	jsapi_ticket = jsonData['ticket']
+	string1 = 'jsapi_ticket=' + jsapi_ticket + '&noncestr=' + nonceStr + '&timestamp=' + timestamp + '&url=' + url
+	signature = hashlib.sha1(string1).hexdigest()
+
+	return signature
 
 def getWebAccessToken(code, state):
     """
